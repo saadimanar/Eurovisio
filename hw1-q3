@@ -1,1 +1,28 @@
 
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+#include <stdbool.h>
+#include <string.h>
+#include "map.h"
+#include "set.h"
+#include "eurovision.h"
+
+#define JUDGE_SCORE 10
+
+typedef struct eurovision_t {
+    Set states;
+    set judges;
+} *Eurovision;
+typedef struct state_t {
+    int stateId;
+    char *stateName;
+    char *songName;
+    Map votes;
+} *State;
+typedef struct judge_t {
+    int judgeId;
+    char *judgeName;
+    int score[JUDGE_SCORE];
+} *Judge;
