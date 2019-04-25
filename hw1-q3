@@ -135,6 +135,24 @@ bool validJudgeName(char* judgeName){
     return true;
 }
 
+bool stateIdIsIn(Eurovision eurovision, int id){
+    SET_FOREACH(State, iterator, eurovision->states){
+        if(iterator->stateId == id){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool judgeIdIsIn(Eurovision eurovision, int id){
+    SET_FOREACH(Judge, iterator, eurovision->judges){
+        if(iterator->judgeId == id){
+            return true;
+        }
+    }
+    return false;
+}
+
 Eurovision eurovisionCreate(){
     Eurovision eurovision = malloc(sizeof(*eurovision));
     if(eurovision == NULL){
@@ -201,7 +219,7 @@ EurovisionResult eurovisionRemoveState(Eurovision eurovision, int stateId){
     if(stateId < 0){
         return EUROVISION_INVALID_ID;
     }
-    if(!setIsIn(eurovision->states, stateId)){
+    if(!stateIdIsIn(eurovision->states, stateId)){
         return EUROVISION_STATE_NOT_EXIST;
     }
     State ptrState = setGetFirst(eurovision->states);
@@ -232,10 +250,8 @@ EurovisionResult eurovisionAddJudge(Eurovision eurovision, int judgeId,
     if(judgeId < 0){
         return EUROVISION_INVALID_ID;
     }
-    SET_FOREACH(Judge, iterator, eurovision->judges){
-        if(iterator->judgeId == judgeId) {
-            return EUROVISION_JUDGE_ALREADY_EXIST;
-        }
+    if(judgeIdIsIn(eurovision, judgeId)){
+        return EUROVISION_JUDGE_ALREADY_EXIST;
     }
     Judge newJudge = (Judge) malloc(sizeof(Judge*));
     if(newJudge == NULL){
@@ -249,18 +265,11 @@ EurovisionResult eurovisionAddJudge(Eurovision eurovision, int judgeId,
     }
     int *ptr = judgeResults;
     for (int i = 0; i < JUDGE_SCORE; ++i) {
-        bool isIn = false;
-        SET_FOREACH(State, iterator, eurovision->states){
-            if(iterator->stateId == judgeResults[i]){
-                ptr[i] = judgeResults[i];
-                isIn = true;
-                break;
-            }
-        }
-        if(isIn == false) {
+        if(!stateIdIsIn(eurovision->states, judgeResults[i])){
             freeJudge(newJudge);
             return EUROVISION_STATE_NOT_EXIST;
         }
+        ptr[i] = judgeResults[i];
     }
     return EUROVISION_SUCCESS
 }
@@ -279,4 +288,35 @@ EurovisionResult eurovisionRemoveJudge(Eurovision eurovision, int judgeId){
         }
     }
     return EUROVISION_JUDGE_NOT_EXIST;
+}
+
+EurovisionResult eurovisionAddVote(Eurovision eurovision, int stateGiver, int stateTaker){
+    if(eurovision == NULL){
+        return EUROVISION_NULL_ARGUMENT;
+    }
+    if((stateGiver < 0) || (stateTaker < 0)){
+        return EUROVISION_INVALID_ID;
+    }
+    if((!stateIdIsIn(eurovision, stateGiver)) || (!stateIdIsIn(eurovision, stateTaker))){
+        return EUROVISION_STATE_NOT_EXIST;
+    }
+    if (stateGiver == stateTaker){
+        return EUROVISION_SAME_STATE;
+    }
+    State ptr;
+    SET_FOREACH(State, iterator, eurovision->states){
+        if(iterator->stateId == stateGiver){
+            ptr = iterator;
+            break;
+        }
+    }
+    int* stateVotes = mapGet(ptr->votes, stateTaker);
+    if(stateVotes != NULL) {
+        *stateVotes = (*stateVotes) + 1;
+    } else{
+        if(mapPut(ptr->votes, stateTaker, 1) != MAP_SUCCESS){
+            return EUROVISION_OUT_OF_MEMORY;
+        }
+    }
+    return EUROVISION_SUCCESS;
 }
