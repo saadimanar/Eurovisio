@@ -56,8 +56,7 @@ void freeJudge(MapDataElement judge) {
     free(judge1->score);
     free(judge1);
 }
-MapDataElement copyState(MapDataElement state1){
-    State state = (State)state1;
+MapDataElement copyState(MapDataElement state){
     if(state == NULL){
         return NULL;
     }
@@ -65,25 +64,26 @@ MapDataElement copyState(MapDataElement state1){
     if(newState == NULL){
         return NULL;
     }
-    strcpy_s((newState->stateName), strlen(state->stateName),(state->stateName));
+    newState->stateName = malloc((sizeof(char))*(strlen(((State)state)->stateName)+1));
     if(newState->stateName == NULL){
         freeState(newState);
         return NULL;
     }
-    strcpy_s((newState->songName), strlen(state->songName), (state->songName));
+    strcpy_s((newState->stateName), (strlen(((State)state)->stateName)+1), (((State)state)->stateName));
+    newState->songName = malloc((sizeof(char))*(strlen(((State)state)->songName)+1));
     if(newState->songName == NULL){
         freeState(newState);
         return NULL;
     }
-    newState->votes = mapCopy(state->votes);
+    strcpy_s((newState->songName), (strlen(((State)state)->songName)+1), (((State)state)->songName));
+    newState->votes = mapCopy(((State)state)->votes);
     if(newState->votes == NULL){
         freeState(newState);
         return NULL;
     }
     return newState;
 }
-MapDataElement copyJudge(MapDataElement judge1){
-    Judge judge = (Judge) judge1;
+MapDataElement copyJudge(MapDataElement judge){
     if(judge == NULL){
         return NULL;
     }
@@ -91,13 +91,14 @@ MapDataElement copyJudge(MapDataElement judge1){
     if(newJudge == NULL){
         return NULL;
     }
-    strcpy_s((newJudge->judgeName), strlen(judge->judgeName), (judge->judgeName));
+    newJudge->judgeName = malloc((sizeof(char))*(strlen(((Judge)judge)->judgeName)+1));
     if(newJudge->judgeName == NULL){
         freeJudge(newJudge);
         return NULL;
     }
+    strcpy_s((newJudge->judgeName), (strlen(((Judge)judge)->judgeName)+1), ((Judge)judge)->judgeName);
     for(int i=0; i<JUDGE_SCORE; i++){
-        newJudge->score[i] = judge->score[i];
+        newJudge->score[i] = ((Judge)judge)->score[i];
     }
     return newJudge;
 }
@@ -181,7 +182,7 @@ EurovisionResult eurovisionAddState(Eurovision eurovision, int stateId,
         freeState(newState);
         return EUROVISION_OUT_OF_MEMORY;
     }
-    if(mapPut(eurovision->states, &stateId, newState) == EUROVISION_SUCCESS){
+    if(mapPut(eurovision->states, &stateId, newState) == MAP_SUCCESS){
         return EUROVISION_SUCCESS;
     }
     return EUROVISION_OUT_OF_MEMORY;
@@ -278,31 +279,10 @@ EurovisionResult eurovisionAddVote(Eurovision eurovision, int stateGiver, int st
     if(stateVotes != NULL) {
         *stateVotes = (*stateVotes) + 1;
     } else{
-        if(mapPut(ptr->votes, &stateTaker, (int*)1) != MAP_SUCCESS){
+        int start = 1;
+        if(mapPut(ptr->votes, &stateTaker, &start) != MAP_SUCCESS){
             return EUROVISION_OUT_OF_MEMORY;
         }
-    }
-    return EUROVISION_SUCCESS;
-}
-
-EurovisionResult eurovisionRemoveVote(Eurovision eurovision, int stateGiver,
-                                      int stateTaker){
-    if(eurovision == NULL){
-        return EUROVISION_NULL_ARGUMENT;
-    }
-    if((stateGiver < 0) || (stateTaker < 0)){
-        return EUROVISION_INVALID_ID;
-    }
-    if((!mapContains(eurovision->states, &stateGiver)) || (!mapContains(eurovision->states, &stateTaker))){
-        return EUROVISION_STATE_NOT_EXIST;
-    }
-    if (stateGiver == stateTaker){
-        return EUROVISION_SAME_STATE;
-    }
-    State ptr = mapGet(eurovision->states, &stateGiver);
-    int* stateVotes = mapGet(ptr->votes, &stateTaker);
-    if(stateVotes != NULL) {
-        *stateVotes = (*stateVotes) - 1;
     }
     return EUROVISION_SUCCESS;
 }
