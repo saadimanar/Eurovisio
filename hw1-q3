@@ -121,7 +121,7 @@ void removeJudgeVote(Judge judge, int stateId){
 bool validJudgeName(const char* judgeName){
     int i = 0;
     while(judgeName[i]){
-        if((judgeName[i] != ' ') || (judgeName[i] > 'z') || (judgeName[i] < 'a'))
+        if((judgeName[i] != ' ') || (judgeName[i] < 'a') || (judgeName[i] > 'z'))
             return false;
     }
     return true;
@@ -283,6 +283,28 @@ EurovisionResult eurovisionAddVote(Eurovision eurovision, int stateGiver, int st
         if(mapPut(ptr->votes, &stateTaker, &start) != MAP_SUCCESS){
             return EUROVISION_OUT_OF_MEMORY;
         }
+    }
+    return EUROVISION_SUCCESS;
+}
+
+EurovisionResult eurovisionRemoveVote(Eurovision eurovision, int stateGiver,
+                                      int stateTaker){
+    if(eurovision == NULL){
+        return EUROVISION_NULL_ARGUMENT;
+    }
+    if((stateGiver < 0) || (stateTaker < 0)){
+        return EUROVISION_INVALID_ID;
+    }
+    if((!mapContains(eurovision->states, &stateGiver)) || (!mapContains(eurovision->states, &stateTaker))){
+        return EUROVISION_STATE_NOT_EXIST;
+    }
+    if (stateGiver == stateTaker){
+        return EUROVISION_SAME_STATE;
+    }
+    State ptr = mapGet(eurovision->states, &stateGiver);
+    int* stateVotes = mapGet(ptr->votes, &stateTaker);
+    if(stateVotes != NULL) {
+        *stateVotes = (*stateVotes) - 1;
     }
     return EUROVISION_SUCCESS;
 }
