@@ -36,11 +36,42 @@ MapKeyElement copyInt(MapKeyElement n) {
     *copy = *(int *) n;
     return copy;
 }
+MapKeyElement copyChar(ListElement n) {
+    if (!n) {
+        return NULL;
+    }
+    char *copy = malloc(sizeof(*copy));
+    if (!copy) {
+        return NULL;
+    }
+    *copy = *(char *) n;
+    return copy;
+}
 void freeInt(MapKeyElement n) {
+    free(n);
+}
+void freeChar(ListElement n) {
     free(n);
 }
 int compareInts(MapKeyElement n1, MapKeyElement n2) {
     return (*(int *) n1 - *(int *) n2);
+}
+MapKeyElement copyDouble(MapKeyElement n) {
+    if (!n) {
+        return NULL;
+    }
+    double *copy = malloc(sizeof(*copy));
+    if (!copy) {
+        return NULL;
+    }
+    *copy = *(double *) n;
+    return copy;
+}
+void freeDouble(MapDataElement n) {
+    free(n);
+}
+int compareChars(ListElement listElement1, ListElement listElement2){
+    return (*(char*)listElement1 - *(char*)listElement2);
 }
 
 void freeState(MapDataElement state) {
@@ -118,13 +149,94 @@ void removeJudgeVote(Judge judge, int stateId){
         ptr[i] = 0;
     }
 }
-bool validJudgeName(const char* judgeName){
+bool isValidJudgeName(const char* judgeName){
     int i = 0;
     while(judgeName[i]){
         if((judgeName[i] != ' ') || (judgeName[i] < 'a') || (judgeName[i] > 'z'))
             return false;
     }
     return true;
+}
+int* maxScoreInt(Map map){
+    int* max = (int*) (-1);
+    int* id = (int*) (-1);
+    MAP_FOREACH(int*, iterator, map){
+        *id = *iterator;
+        int* helper = mapGet(map, iterator);
+        if(*helper == *max){
+            if(*id > *iterator){
+                *id = *iterator;
+            }
+        }
+        if(*helper > *max){
+            *max = *helper;
+            *id = *iterator;
+        }
+    }
+    return id;
+}
+int* audienceVotes(Map map){
+    assert(map != NULL);
+    int* audienceVotes = malloc(sizeof(audienceVotes)*JUDGE_SCORE);
+    Map mapCopied = mapCopy(map);
+    int i = 0;
+    int* iterator = mapGetFirst(mapCopied);
+    while((i < JUDGE_SCORE) && (iterator != NULL)){
+        int *id = maxScoreInt(mapCopied);
+        if(*id == -1){
+            while (i < JUDGE_SCORE){
+                audienceVotes[i] = 0;
+                i++;
+            }
+            return audienceVotes;
+        }
+        mapRemove(mapCopied, id);
+        audienceVotes[i] = *id;
+        i++;
+        iterator = mapGetFirst(mapCopied);
+    }
+    return audienceVotes;
+}
+int votesToScores(int votes){
+    switch (votes){
+       case 0:
+           return 12;
+       case 1:
+           return  10;
+       default:
+           return (JUDGE_SCORE+1)-3;
+    }
+}
+int* maxScoreDouble(Map map){
+    double* max = (double*) (-1);
+    int* id = (int*) (-1);
+    MAP_FOREACH(int*, iterator, map){
+        *id = *iterator;
+        double* helper = mapGet(map, iterator);
+        if(*helper == *max){
+            if(*id > *iterator){
+                *id = *iterator;
+            }
+        }
+        if(*helper > *max){
+            *max = *helper;
+            *id = *iterator;
+        }
+    }
+    return id;
+}
+char* writeStateByOrder(char* state1, char* state2){
+    char* result = malloc(sizeof(char)*((strlen(state1))+ strlen(state2) + 2));
+    if(state1[0] > state2[0]){
+        strcpy_s(result, (strlen(state1)+1), (state1));
+        result[strlen(state1)+1] = '-';
+        strcat_s(result, (strlen(state1))+ strlen(state2) + 2, state2);
+    } else{
+        strcpy_s(result, (strlen(state1)+1), (state1));
+        result[strlen(state2)+1] = '-';
+        strcat_s(result, (strlen(state1))+ strlen(state2) + 2, state2);
+    }
+    return result;
 }
 
 Eurovision eurovisionCreate(){
@@ -215,7 +327,7 @@ EurovisionResult eurovisionAddJudge(Eurovision eurovision, int judgeId,
     if((eurovision == NULL) || (judgeName == NULL) || (judgeResults == NULL)){
         return EUROVISION_NULL_ARGUMENT;
     }
-    if(!validJudgeName(judgeName)){
+    if(!isValidJudgeName(judgeName)){
         return EUROVISION_INVALID_NAME;
     }
     if(judgeId < 0){
@@ -307,4 +419,148 @@ EurovisionResult eurovisionRemoveVote(Eurovision eurovision, int stateGiver,
         *stateVotes = (*stateVotes) - 1;
     }
     return EUROVISION_SUCCESS;
+}
+
+List eurovisionRunContest(Eurovision eurovision, int audiencePercent){
+    if((audiencePercent >= 1) && (audiencePercent <= 100)){
+        return NULL;
+    }
+    if(eurovision == NULL) {
+        return NULL;
+    }
+    Map states = mapCreate(copyInt, copyInt, freeInt, freeInt, compareInts);
+    if(states == NULL){
+        return NULL;
+    }
+    Map judges = mapCreate(copyInt, copyInt, freeInt, freeInt, compareInts);
+    if(judges == NULL){
+        return NULL;
+    }
+    Map allScore = mapCreate(copyDouble, copyInt, freeDouble, freeInt, compareInts);
+    if(allScore == NULL){
+        mapDestroy(states);
+        mapDestroy(judges);
+        return NULL;
+    }
+    MAP_FOREACH(int*, iterator, eurovision->states){
+        if(mapPut(states, iterator, (int*)0) != MAP_SUCCESS) {
+            mapDestroy(states);
+            mapDestroy(judges);
+            mapDestroy(allScore);
+            return NULL;
+        }
+        if(mapPut(judges, iterator, (int*)0) != MAP_SUCCESS) {
+            mapDestroy(states);
+            mapDestroy(judges);
+            mapDestroy(allScore);
+            return NULL;
+        }
+        if(mapPut(allScore, iterator, (double*)0) != MAP_SUCCESS) {
+            mapDestroy(states);
+            mapDestroy(judges);
+            mapDestroy(allScore);
+            return NULL;
+        }
+    }
+    MAP_FOREACH(int*, iterator, eurovision->states){
+        State state = mapGet(eurovision->states, iterator);
+        int* audience_votes = audienceVotes(state->votes);
+        for (int i = 0; i < JUDGE_SCORE; ++i) {
+            int* id = (int*) (-1);
+            *id = audience_votes[i];
+            int* score = mapGet(state->votes, id);
+            *score = *score + votesToScores(i);
+        }
+    }
+    MAP_FOREACH(int*, iterator, eurovision->judges){
+        Judge judge = mapGet(eurovision->judges, iterator);
+        for (int i = 0; i < JUDGE_SCORE; ++i) {
+            int* score = mapGet(judges, (int*)(judge->score)[i]);
+            *score = *score + votesToScores(i);
+        }
+    }
+    MAP_FOREACH(int*, iterator, eurovision->states){
+        int* stateScore = mapGet(states, iterator);
+        int* judgeScore = mapGet(judges, iterator);
+        double all = (((double)(*stateScore)/12)*(1-((double)audiencePercent/100)))+(((double)(*judgeScore)/12)*((double)audiencePercent/100));
+        if(mapPut(allScore, iterator, &all) != MAP_SUCCESS){
+            mapDestroy(states);
+            mapDestroy(judges);
+            mapDestroy(allScore);
+            return NULL;
+        }
+    }
+
+    int size = mapGetSize(eurovision->states);
+    List result = listCreate(copyInt, freeInt);
+    if(result == NULL){
+        mapDestroy(states);
+        mapDestroy(judges);
+        mapDestroy(allScore);
+        return NULL;
+    }
+    for (int j = 0; j < size; ++j) {
+        int* max = maxScoreDouble(allScore);
+        if(listInsertLast(result, max) != LIST_SUCCESS){
+            mapDestroy(states);
+            mapDestroy(judges);
+            mapDestroy(allScore);
+            listDestroy(result);
+            return NULL;
+        }
+        mapRemove(allScore, max);
+    }
+    return result;
+}
+
+List eurovisionRunAudienceFavorite(Eurovision eurovision){
+    return eurovisionRunContest(eurovision, 100);
+}
+
+List eurovisionRunGetFriendlyStates(Eurovision eurovision){
+    if(eurovision == NULL){
+        return NULL;
+    }
+    Map topStates = mapCreate(copyInt, copyInt, freeInt, freeInt, compareInts);
+    if(topStates == NULL){
+        return NULL;
+    }
+    MAP_FOREACH(int*, iterator, eurovision->states){
+        State state = mapGet(eurovision->states, iterator);
+        int* audience_votes = audienceVotes(state->votes);
+        if(mapPut(topStates, iterator, (int*)audience_votes[0]) != MAP_SUCCESS){
+            mapDestroy(topStates);
+            return NULL;
+        }
+    }
+    List result = listCreate(copyChar, freeChar);
+    if(result == NULL){
+        mapDestroy(topStates);
+        return NULL;
+    }
+    int* ptr = mapGetFirst(topStates);
+    while(ptr != NULL){
+        int* firstState = mapGet(topStates, ptr);
+        int* secondState = mapGet(topStates, firstState);
+        if(*firstState == *secondState){
+            State state1 = mapGet(eurovision->states, firstState);
+            State state2 = mapGet(eurovision->states, secondState);
+            char* stateName1 = state1->stateName;
+            char* stateName2 = state2->stateName;
+            if(listInsertLast(result, writeStateByOrder(stateName1, stateName2)) != LIST_SUCCESS){
+                mapDestroy(topStates);
+                listDestroy(result);
+                return NULL;
+            }
+        }
+        mapRemove(topStates, firstState);
+        mapRemove(topStates, secondState);
+        ptr = mapGetFirst(topStates);
+    }
+    if(listSort(result, compareChars) != LIST_SUCCESS){
+        mapDestroy(topStates);
+        listDestroy(result);
+        return NULL;
+    }
+    return result;
 }
