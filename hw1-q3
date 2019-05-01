@@ -115,20 +115,20 @@ MapDataElement copyState(MapDataElement state){
     return newState;
 }
 MapDataElement copyJudge(MapDataElement judge){
-    if(judge == NULL){
+    if(judge==NULL){
         return NULL;
     }
-    Judge newJudge = malloc(sizeof(*newJudge));
+    Judge newJudge = (Judge) malloc(sizeof(Judge*));
     if(newJudge == NULL){
         return NULL;
     }
-    newJudge->judgeName = malloc((sizeof(char))*(strlen(((Judge)judge)->judgeName)));
+    newJudge->judgeName = malloc((sizeof(char))*(strlen(((Judge)judge)->judgeName)+1));
     if(newJudge->judgeName == NULL){
         freeJudge(newJudge);
         return NULL;
     }
     strcpy_s((newJudge->judgeName), (strlen(((Judge)judge)->judgeName)+1), ((Judge)judge)->judgeName);
-    for(int i = 0; i < JUDGE_SCORE; i++){
+    for(int i=0; i<JUDGE_SCORE; i++){
         newJudge->score[i] = ((Judge)judge)->score[i];
     }
     return newJudge;
@@ -150,19 +150,18 @@ void removeJudgeVote(Judge judge, int stateId){
     }
 }
 bool isValidJudgeName(const char* judgeName){
-    int i = 0;
-    while(judgeName[i] != '\0'){
-        printf("%c\n", judgeName[i]);
-        if((judgeName[i] < 'a') || (judgeName[i] > 'z')) {
-            printf("1");
-            if(judgeName[i] != ' ') {
-                printf("2\n");
+    int i=0;
+    while(judgeName[i]){
+        if (judgeName[i]== ' '){
+            continue;
+        }
+        else{
+            if ((judgeName[i] < 'a')||(judgeName[i] > 'z')){
                 return false;
             }
         }
         i++;
     }
-    printf("success\n");
     return true;
 }
 int* maxScoreInt(Map map){
@@ -205,14 +204,16 @@ int* audienceVotes(Map map){
     }
     return audienceVotes;
 }
-int votesToScores(int votes) {
-    switch (votes) {
+int votesToScores(int votes){
+    switch (votes){
         case 0:
             return 12;
         case 1:
-            return 10;
+            return  10;
+        case 2:
+            return  8;
         default:
-            return (JUDGE_SCORE + votes) - 3;
+            return -((votes-9)-1);
     }
 }
 int* maxScoreDouble(Map map){
@@ -257,7 +258,7 @@ Eurovision eurovisionCreate(){
         eurovisionDestroy(eurovision);
         return NULL;
     }
-    eurovision->judges = mapCreate(copyJudge, copyInt, freeJudge, freeInt, compareInts);
+    eurovision->judges = mapCreate(copyJudge,copyInt, freeInt, freeJudge, compareInts);
     if(eurovision->judges == NULL){
         eurovisionDestroy(eurovision);
         return NULL;
@@ -287,20 +288,16 @@ EurovisionResult eurovisionAddState(Eurovision eurovision, int stateId,
     if(newState == NULL){
         return EUROVISION_OUT_OF_MEMORY;
     }
-    newState->songName = malloc(sizeof(char)*(strlen(songName)+1));
+    newState->songName = malloc((sizeof(char)*(strlen(songName)))+1);
     if(newState->songName == NULL){
         freeState(newState);
         return EUROVISION_OUT_OF_MEMORY;
     }
-    strcpy_s((newState->songName), (strlen(songName)+1), songName);
-
-    newState->stateName = malloc(sizeof(char)*(strlen(stateName)+1));
+    newState->stateName = malloc((sizeof(char)*(strlen(stateName)))+1);
     if(newState->songName == NULL){
         freeState(newState);
         return EUROVISION_OUT_OF_MEMORY;
     }
-    strcpy_s((newState->stateName), (strlen(stateName)+1), stateName);
-
     newState->votes = mapCreate(copyInt, copyInt, freeInt, freeInt, compareInts);
     if(newState->votes == NULL){
         freeState(newState);
@@ -336,45 +333,46 @@ EurovisionResult eurovisionRemoveState(Eurovision eurovision, int stateId){
 EurovisionResult eurovisionAddJudge(Eurovision eurovision, int judgeId,
                                     const char *judgeName,
                                     int *judgeResults){
-    if((eurovision == NULL) || (judgeName == NULL) || (judgeResults == NULL)){
+    if((eurovision==NULL)||(judgeName==NULL)||(judgeResults==NULL)){
         return EUROVISION_NULL_ARGUMENT;
     }
-    if(judgeId < 0){
+    if(judgeId<0){
         return EUROVISION_INVALID_ID;
     }
-    for (int i = 0; i < JUDGE_SCORE; ++i) {
-        if (judgeResults[i] < 0) {
+    for (int i=0;i<10;i++) {
+        if(judgeResults[i]<0){
             return EUROVISION_INVALID_ID;
         }
-        if (!mapContains(eurovision->states, &judgeResults[i])) {
-            return EUROVISION_STATE_NOT_EXIST;
-        }
     }
+
     if(!isValidJudgeName(judgeName)){
         return EUROVISION_INVALID_NAME;
     }
-    if(mapContains(eurovision->judges, &judgeId) == true){
+    if(mapContains(eurovision->judges, &judgeId)){
         return EUROVISION_JUDGE_ALREADY_EXIST;
     }
-    Judge newJudge = (Judge) malloc(sizeof(*newJudge));
-    if(newJudge == NULL){
+    Judge newJudge = (Judge) malloc(sizeof(Judge*));
+    if(newJudge==NULL){
         return EUROVISION_OUT_OF_MEMORY;
     }
-    newJudge->judgeName = malloc(sizeof(char)*(strlen(judgeName)+1));
-    if(newJudge->judgeName == NULL){
+    newJudge->judgeName = malloc((sizeof(char)*(strlen(judgeName)))+1);
+    if(newJudge->judgeName==NULL){
         freeJudge(newJudge);
         return EUROVISION_OUT_OF_MEMORY;
     }
-    strcpy_s((newJudge->judgeName), (strlen(judgeName)+1), judgeName);
-
-    int *ptr = newJudge->score;
-    for (int i = 0; i < JUDGE_SCORE; ++i) {
+    int *ptr = judgeResults;
+    for (int i=0; i<JUDGE_SCORE;++i) {
+        if(!mapContains(eurovision->states, judgeResults)){
+            freeJudge(newJudge);
+            return EUROVISION_STATE_NOT_EXIST;
+        }
         ptr[i] = judgeResults[i];
+        judgeResults++;
     }
-    if(mapPut(eurovision->judges, &judgeId, newJudge) == MAP_SUCCESS){
-        return EUROVISION_SUCCESS;
+    if(mapPut(eurovision->judges,&judgeId,newJudge)!=MAP_SUCCESS){
+        return EUROVISION_OUT_OF_MEMORY;
     }
-    return EUROVISION_OUT_OF_MEMORY;
+    return EUROVISION_SUCCESS;
 }
 
 EurovisionResult eurovisionRemoveJudge(Eurovision eurovision, int judgeId){
