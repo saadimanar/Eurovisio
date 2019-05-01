@@ -1,50 +1,3 @@
-//NADEEN
-EurovisionResult eurovisionAddJudge(Eurovision eurovision, int judgeId,
-                                    const char *judgeName,
-                                    int *judgeResults){
-    if((eurovision==NULL)||(judgeName==NULL)||(judgeResults==NULL)){
-        return EUROVISION_NULL_ARGUMENT;
-    }
-    if(judgeId<0){
-        return EUROVISION_INVALID_ID;
-    }
-    for (int i = 0; i < JUDGE_SCORE; i++){
-        if (judgeResults[i] < 0) {
-            return EUROVISION_INVALID_ID;
-        }
-        if (!mapContains(eurovision->states, &judgeResults[i])) {
-            return EUROVISION_STATE_NOT_EXIST;
-        }
-    }
-    if(!isValidJudgeName(judgeName)){
-        return EUROVISION_INVALID_NAME;
-    }
-    if(mapContains(eurovision->judges, &judgeId)){
-        return EUROVISION_JUDGE_ALREADY_EXIST;
-    }
-    Judge newJudge = (Judge) malloc(sizeof(Judge*));
-    if(newJudge==NULL){
-        return EUROVISION_OUT_OF_MEMORY;
-    }
-    newJudge->judgeName = malloc((sizeof(char)*(strlen(judgeName)))+1);
-    if(newJudge->judgeName==NULL){
-        freeJudge(newJudge);
-        return EUROVISION_OUT_OF_MEMORY;
-    }
-    for (int i = 0; i < JUDGE_SCORE;++i){
-        newJudge->score[i] = judgeResults[i];
-    }
-    if(mapPut(eurovision->judges,&judgeId,newJudge)!=MAP_SUCCESS){
-        return EUROVISION_OUT_OF_MEMORY;
-    }
-    return EUROVISION_SUCCESS;
-}
-
-
-
-****************************************************************************************************************************************
-
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
@@ -386,12 +339,14 @@ EurovisionResult eurovisionAddJudge(Eurovision eurovision, int judgeId,
     if(judgeId<0){
         return EUROVISION_INVALID_ID;
     }
-    for (int i=0;i<10;i++) {
-        if(judgeResults[i]<0){
+    for (int i = 0; i < JUDGE_SCORE; i++){
+        if (judgeResults[i] < 0) {
             return EUROVISION_INVALID_ID;
         }
+        if (!mapContains(eurovision->states, &judgeResults[i])) {
+            return EUROVISION_STATE_NOT_EXIST;
+        }
     }
-
     if(!isValidJudgeName(judgeName)){
         return EUROVISION_INVALID_NAME;
     }
@@ -407,20 +362,16 @@ EurovisionResult eurovisionAddJudge(Eurovision eurovision, int judgeId,
         freeJudge(newJudge);
         return EUROVISION_OUT_OF_MEMORY;
     }
-    int *ptr = judgeResults;
-    for (int i=0; i<JUDGE_SCORE;++i) {
-        if(!mapContains(eurovision->states, judgeResults)){
-            freeJudge(newJudge);
-            return EUROVISION_STATE_NOT_EXIST;
-        }
-        ptr[i] = judgeResults[i];
-        judgeResults++;
+    for (int i = 0; i < JUDGE_SCORE;++i){
+        newJudge->score[i] = judgeResults[i];
     }
     if(mapPut(eurovision->judges,&judgeId,newJudge)!=MAP_SUCCESS){
         return EUROVISION_OUT_OF_MEMORY;
     }
     return EUROVISION_SUCCESS;
 }
+
+
 
 EurovisionResult eurovisionRemoveJudge(Eurovision eurovision, int judgeId){
     if(eurovision == NULL){
