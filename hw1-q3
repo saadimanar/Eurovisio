@@ -718,3 +718,187 @@ List eurovisionRunGetFriendlyStates(Eurovision eurovision){
     mapDestroy(topStates);
     return result;
 }
+********************************************************************************************************************************************
+//manar// h.files
+judge.h
+#ifndef EUROVISION_JUDGE_H
+#define EUROVISION_JUDGE_H
+
+#include <stdbool.h>
+
+#define JUDGE_SCORE 10
+
+/**
+* judge Container
+
+* The following functions are available:
+*   judgeCreate		- Creates a new empty judge
+*   judgeDestroy	- Deletes an existing judge and frees all resources
+*   judgeCopy		- Copies an existing judge
+*  judgeContainState - returns weather or not a stateid exists inside the judge scores.
+*/
+
+/** Type for defining the judge */
+typedef struct judge_t *Judge;
+
+/** Type used for returning error codes from judge functions */
+typedef enum JudgeResult_t {
+    JUDGE_SUCCESS,
+    JUDGE_OUT_OF_MEMORY,
+    JUDGE_NULL_ARGUMENT,
+    JUDGE_ITEM_ALREADY_EXISTS,
+    JUDGE_ITEM_DOES_NOT_EXIST
+} JudgeResult;
+
+/**
+* judgeCreate: Allocates a new judge.
+*
+* @param id_the judge id
+* @param judgeName
+* @param scores pointer to array size 10 that contains the statesid that the judge voted to
+* @return
+* 	NULL - if one of the parameters is NULL or allocations failed.
+* 	A new judge in case of success.
+*/
+Judge judgeCreate(int id, const char* judgeName, const int* scores);
+
+/**
+* judgeDestroy: Deallocates an existing judge
+*
+* @param map - Target judge to be deallocated. If judge is NULL nothing will be
+* 		done
+*/
+void judgeDestroy(Judge judge);
+
+/**
+* judgeCopy: Creates a copy of target judge.
+* Iterator value is undefined after this operation.
+*
+* @param map - Target judge.
+* @return
+* 	NULL if a NULL was sent or a memory allocation failed.
+* 	A judge containing the same elements as judge otherwise.
+*/
+Judge judgeCopy(Judge judge);
+/**
+ * judgeContainState: Checks if the judge voted to the state with the stateid that the function gets
+ *
+* @param judge - The judge to search in his array of scores
+* @param stateId - The stateid to look for.
+* @return
+* 	false - if one or more of the inputs is null, or if the stateid was not found.
+* 	true - if the stateid was found in the judge scores.
+*/
+
+bool judgeContainState(Judge judge, int stateId);
+
+#endif //EUROVISION_JUDGE_H
+
+
+
+
+
+
+
+
+
+
+///////state.h
+#ifndef EUROVISION_STATE_H
+#define EUROVISION_STATE_H
+
+#define FIRST_VOTE 1
+#define INITIAL_VALUE -1
+#define DIFFERENT_VALID_SCORE 10
+
+#include <stdbool.h>
+#include "map.h"
+
+/**
+* State Container
+*
+* Implements a state container type.
+*
+* The following functions are available:
+*  stateCreate		- Creates a new empty state
+*  stateDestroy		- Deletes an existing state and frees all resources
+*  stateCopy		- Copies an existing state
+*  addOneVote       -adds one vote to the state votes to the statetaker
+*  removeOneVote    -removes one vote of the state votes to the statetaker
+*  getStateWithHighestVotes - gets the state id of the highest voted to state
+*  topVotingStates     -gets array size 10 with the top voting to states
+*/
+
+/** Type for defining the state */
+typedef struct state_t *State;
+
+/** Type used for returning error codes from state functions */
+typedef enum StateResult_t {
+    STATE_SUCCESS,
+    STATE_OUT_OF_MEMORY,
+    STATE_NULL_ARGUMENT,
+    STATE_ITEM_ALREADY_EXISTS,
+    STATE_ITEM_DOES_NOT_EXIST
+} StateResult;
+
+/**
+* stateCreate: Allocates a new state.
+*
+* @param id - the new state id
+* @param stateName-the new state name
+* @param songName_the new state songName
+* @return
+* 	NULL - if one of the parameters is NULL or allocations failed.
+* 	A new State in case of success.
+*/
+State stateCreate(int id, const char* stateName, const char* songName);
+
+/**
+* stateDestroy: Deallocates an existing state. Clears all elements by using the
+* stored free functions.
+*
+* @param state - Target state to be deallocated. If state is NULL nothing will be
+* 		done
+*/
+void stateDestroy(State state);
+
+/**
+* stateCopy: Creates a copy of target state.
+* @param state - Target state.
+* @return
+* 	NULL if a NULL was sent or a memory allocation failed.
+* 	A State containing the same elements as state otherwise.
+*/
+State stateCopy(State state);
+/**
+ * addOneVote:adds one vote to the state votes to the statetaker
+ * @param state -Target state
+ * @param stateTaker -the state to add one vote to
+ * @return returns false if faild to add the vote otherwise true
+ */
+bool addOneVote(State state, int stateTaker);
+
+/**
+ *  removeOneVote    -removes one vote of the state votes to the statetaker
+ * @param state -Target state
+ * @param stateTaker -the state to remove on vote from
+ */
+void removeOneVote(State state, int stateTaker);
+/**
+ * gets the state id of the highest voted-to state
+ * @param votes -the target state votes
+ * @return the highest voted-to state by the target state
+ */
+int getStateWithHighestVotes(Map votes);
+/**
+ * topVotingStates -gets array size 10 with the top voting to states
+ * @param state -Target state
+ * @return array size 10 with the top voting to states
+ * if the state voted to less than 10 states then the rest of the array will contain 0
+ */
+
+int* topVotingStates(State state);
+
+#endif //EUROVISION_STATE_H
+
+
