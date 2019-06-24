@@ -327,7 +327,7 @@ class MainControl {
 
 public :
 
-    class Iterator
+    typedef class Iterator
     {
         int index;
         Participant* pointer;
@@ -341,7 +341,7 @@ public :
         bool operator<(Iterator iterator);
         Participant& operator*();
         bool operator==(Iterator iterator);
-    };
+    }Iterator;
 
     explicit MainControl(int maxTimeLength = 180, int maxParticipant = 26, int maxVotingTime = 5, Phase phase = Registration);
     ~MainControl();
@@ -353,7 +353,7 @@ public :
     MainControl& operator-=(Participant &participant);
     friend std::ostream& operator<<(std::ostream &os, const MainControl& mainControl);
     string operator()(int num, VoterType voterType);
-    Iterator iterator();
+    void iterator(Iterator* iterator);
     Iterator begin();
     Iterator end();
 
@@ -540,6 +540,21 @@ std::ostream& operator<<(std::ostream &os, const MainControl& mainControl){
     return os;
 }
 
+MainControl::Iterator::Iterator() {
+    this->pointer = nullptr;
+    this->index = (-1);
+    this->mainControl = nullptr;
+    MainControl mainControl;
+    mainControl.iterator(this);
+}
+
+void MainControl::iterator(Iterator* iterator) {
+    if(this->participants != nullptr) {
+        iterator->index = 0;
+        iterator->pointer = this->participants[0];
+    }
+    iterator->mainControl = this;
+}
 MainControl::Iterator MainControl::begin() {
     Iterator iterator;
     iterator.mainControl = this;
@@ -564,11 +579,7 @@ MainControl::Iterator MainControl::end() {
     }
     return iterator;
 }
-MainControl::Iterator::Iterator() {
-    this->index = (-1);
-    this->pointer = nullptr;
-    this->mainControl = nullptr;
-}
+
 MainControl::Iterator& MainControl::Iterator::operator++() {
     if(this->index < this->mainControl->index) {
         this->index++;
