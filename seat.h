@@ -8,16 +8,15 @@ using std::cin;
 using std::endl;
 
 
-class NoPrice{
-    string what(){
-        return ("Not For Sale !");
-    }
-
+class NoPrice:public exception{
+public:
+   const char* what() const noexcept override{
+       return "Not For Sale !";
+   }
 };
 
 
 
-// ---------------------------------------------
 class Seat
 {
     int lineNumber;
@@ -31,20 +30,20 @@ public:
     virtual string location() const{
         string d = std::to_string(lineNumber);
         string f = std::to_string(chairNumber);
-        string string = "line "+ d +" chair "+ f;
+        string string = "line: "+ d + "," +" chair: "+ f;
         return string;
     }
     virtual int price() const=0;
 
 };
 
-// ---------------------------------------------
+
 class GreenRoomSeat:public Seat
 {
 public:
     GreenRoomSeat(int linenumber,int chairnumber):Seat(linenumber,chairnumber,0){}
     string location() const override{
-        string string1="GreenRoomSeat->"+(Seat::location());
+        string string1="Green Room-> "+(Seat::location());
         return string1;
     }
 
@@ -63,7 +62,7 @@ public:
 
 };
 
-// ---------------------------------------------
+
 class MainHallSeat:public Seat
 {
 public:
@@ -74,28 +73,35 @@ public:
 
 };
 
-// ---------------------------------------------
+
 class SpecialSeat:public MainHallSeat
 {
 public:
-    SpecialSeat(int linenumber, int chairnumber,int price):MainHallSeat(linenumber,chairnumber,price){}
+    SpecialSeat(int linenumber, int chairnumber,int price):
+    MainHallSeat(linenumber,chairnumber,price+300){}
     int price() const override{
         return this->Price;
     }
 };
 
-// ---------------------------------------------
+
 class GoldenCircleSeat:public SpecialSeat
 {
 public:
-    GoldenCircleSeat(int linenumber, int chairnumber,int price):SpecialSeat(linenumber,chairnumber,price+1000){}
+    GoldenCircleSeat(int linenumber, int chairnumber,int price):
+    SpecialSeat(linenumber,chairnumber,price+1000){}
+    string location() const override{
+        string string1 = "Golden Circle-> "+(SpecialSeat::location());
+        return string1;
+
+    }
     int price() const override{
        return this->Price;
     }
 
 };
 
-// ---------------------------------------------
+
 class DisablePodiumSeat:public SpecialSeat
 {
 private:
@@ -103,6 +109,11 @@ private:
 public:
     DisablePodiumSeat(int linenumber, int chairnumber,int price=0):
     SpecialSeat(linenumber,chairnumber,price),specialPrice(200){}
+    string location() const override{
+        string string1 = "Disable Podium-> "+(SpecialSeat::location());
+        return string1;
+
+    }
     int price() const override{
         return this->specialPrice;
     }
@@ -110,15 +121,15 @@ public:
 
 class RegularSeat:public MainHallSeat
 {
-private:
+protected:
    char area;
 public:
     RegularSeat(char area,int linenumber, int chairnumber,int price):
     MainHallSeat(linenumber,chairnumber,price){
         this->area=area;
     }
-//    virtual void location() const override {
-//       cout<<"area:"<<area;
+//    virtual string location() const override {
+//       return
 //      MainHallSeat::location();
 //    }
     int price() const override{
@@ -134,7 +145,9 @@ public:
     FrontRegularSeat(char area,int linenumber, int chairnumber,int price):
     RegularSeat(area,linenumber,chairnumber,price+500){}
     string location() const override{
-        string string1 = "Front->area:"+RegularSeat::location();
+
+      string s(1,this->area);
+        string string1 = "Front-> area: "+s+", "+(RegularSeat::location());
         return string1;
 
     }
@@ -151,7 +164,8 @@ public:
     MiddleRegularSeat(char area,int linenumber, int chairnumber,int price):
             RegularSeat(area,linenumber,chairnumber,price+250){}
     string location() const override{
-        string string1="Middle->area:"+RegularSeat::location();
+        string s(1,this->area);
+        string string1 = "Middle-> area: "+s+", "+(RegularSeat::location());
         return string1;
     }
     int price() const override{
@@ -159,14 +173,16 @@ public:
     }
 };
 
-// ---------------------------------------------
+
 class RearRegularSeat:public RegularSeat
 {
 public:
     RearRegularSeat(char rear,int linenumber, int chairnumber,int price):
     RegularSeat(rear,linenumber,chairnumber,price){}
     string location() const override{
-        return ("Rear->area:"+RegularSeat::location());
+        string s(1,this->area);
+        string string1 = "Rear-> area: "+s+", "+(RegularSeat::location());
+        return string1;
     }
     int price() const override{
         return this->Price;
